@@ -1,0 +1,11 @@
+# C object files
+*.o
+
+# CMake build directory
+build/
+
+# Visual Studio Code build directory
+.vscode/
+
+# Clang format cache
+.clang-format-cache

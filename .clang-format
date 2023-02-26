@@ -1,0 +1,10 @@
+Language:        C
+BasedOnStyle:    Google
+IndentWidth:     4
+AccessModifierOffset: -4
+DerivePointerAlignment: false
+PointerAlignment:      Left
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine:        false
+IndentCaseLabels:                   false
+ColumnLimit:                        80
