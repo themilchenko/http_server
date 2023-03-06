@@ -1,7 +1,28 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(myProject C)
+project("http_server" LANGUAGES C)
 
-add_executable(greeting src/main.c src/greeting.c)
+# Set default settings
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+add_compile_definitions(DEBUG)
 
-target_include_directories(greeting PUBLIC include)
+# Declarate all headers and its sources
+set(
+    ${PROJECT_NAME}_SERVER_LIB_HEADERS ${CMAKE_SOURCE_DIR}/include/server.h
+)
+set(
+    ${PROJECT_NAME}_SERVER_LIB_SOURCES ${CMAKE_SOURCE_DIR}/src/server.c
+)
+
+set(${PROJECT_NAME}_CMD_SOURCES ${CMAKE_SOURCE_DIR}/src/main.c)
+
+# Build project
+add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_CMD_SOURCES})
+add_library(
+    ${PROJECT_NAME}_SERVER_LIB STATIC
+    ${${PROJECT_NAME}_SERVER_LIB_SOURCES}
+)
+
+target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_SERVER_LIB)
+
