@@ -84,7 +84,7 @@ void parse_request(char *request_str, struct http_request_t *request) {
     strncpy(request->path, token, MAX_PATH_LEN);
 }
 
-void read_file(char *path, char *buffer, size_t size) {
+void read_file(char *path, char *buffer, ssize_t size) {
     int fd = open(path, O_RDONLY);
     if (fd == -1) {
         perror("open");

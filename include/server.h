@@ -6,6 +6,9 @@
 #define MAX_HEADER_LEN 2048
 #define MAX_RESPONSE_LEN 102400
 
+#define PORT 8080
+#define BACKLOG 10
+
 struct http_request_t {
     char method[10];
     char path[MAX_PATH_LEN];
