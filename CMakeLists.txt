@@ -10,9 +10,11 @@ add_compile_definitions(DEBUG)
 # Declarate all headers and its sources
 set(
     ${PROJECT_NAME}_SERVER_LIB_HEADERS ${CMAKE_SOURCE_DIR}/include/server.h
+    ${PROJECT_NAME}_CONFIG_LIB_HEADERS ${CMAKE_SOURCE_DIR}/include/config.h
 )
 set(
     ${PROJECT_NAME}_SERVER_LIB_SOURCES ${CMAKE_SOURCE_DIR}/src/server.c
+    ${PROJECT_NAME}_CONFIG_LIB_SOURCES ${CMAKE_SOURCE_DIR}/src/config.c
 )
 
 set(${PROJECT_NAME}_CMD_SOURCES ${CMAKE_SOURCE_DIR}/src/main.c)
