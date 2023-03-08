@@ -4,7 +4,6 @@
 struct cfg_t {
     int port;
     int cpu_limit;
-    int thread_limit;
     char document_root[1024];
 };
 

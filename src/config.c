@@ -6,7 +6,6 @@
 void init_config(struct cfg_t *config) {
     config->port = 8080;
     config->cpu_limit = 1;
-    config->thread_limit = 2;
     strcpy(config->document_root, "var/www/html");
 }
 
