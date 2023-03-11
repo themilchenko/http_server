@@ -9,3 +9,6 @@ build/
 
 # Clang format cache
 .clang-format-cache
+
+# Testing dir
+httptest/

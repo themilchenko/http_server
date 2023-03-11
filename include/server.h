@@ -6,7 +6,7 @@
 #define MAX_HEADER_LEN 2048
 #define MAX_RESPONSE_LEN 102400
 
-#define PORT 8080
+#define PORT 8081
 #define BACKLOG 10
 
 struct http_request_t {

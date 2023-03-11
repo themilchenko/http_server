@@ -22,6 +22,11 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
+    // Enabling address reuse
+    int optval = 1;
+    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+
+
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(PORT);
@@ -36,6 +41,7 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
+    printf("Server listening %d port...\n", PORT);
     while (1) {
         client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &client_addr_len);
         if (client_socket < 0) {
@@ -43,20 +49,25 @@ int main() {
             exit(EXIT_FAILURE);
         }
 
-        pid_t pid = fork();
-        if (pid < 0) {
-            perror("fork");
-            exit(EXIT_FAILURE);
-        }
+        // close(server_socket);
+        handle_request(client_socket);
+        close(client_socket);
+        // exit(EXIT_SUCCESS);
 
-        if (pid == 0) {
-            close(server_socket);
-            handle_request(client_socket);
-            close(client_socket);
-            exit(EXIT_SUCCESS);
-        } else {
-            close(client_socket);
-        }
+        // pid_t pid = fork();
+        // if (pid < 0) {
+        //     perror("fork");
+        //     exit(EXIT_FAILURE);
+        // }
+
+        // if (pid == 0) {
+        //     close(server_socket);
+        //     handle_request(client_socket);
+        //     close(client_socket);
+        //     exit(EXIT_SUCCESS);
+        // } else {
+        //     close(client_socket);
+        // }
     }
 
     return EXIT_SUCCESS;

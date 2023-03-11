@@ -11,7 +11,7 @@
 #include <time.h>
 #include "server.h"
 
-#define PORT 8080
+#define PORT 8081
 #define BACKLOG 10
 
 void handle_request(int client_socket) {
@@ -22,6 +22,8 @@ void handle_request(int client_socket) {
         exit(EXIT_FAILURE);
     }
     request_str[bytes_recieved] = '\0';
+
+    printf(request_str);
 
     struct http_request_t request;
     parse_request(request_str, &request);
@@ -68,7 +70,7 @@ void handle_request(int client_socket) {
 
 void send_response(int client_socket, struct http_response_t* response) {
     char response_str[MAX_RESPONSE_LEN];
-    size_t response_len = sprintf(response_str, MAX_RESPONSE_LEN, "%s%sContent-Length: %ld\r\n\r\n%s", response->status, response->content_type, strlen(response->body), response->body);
+    size_t response_len = snprintf(response_str, MAX_RESPONSE_LEN, "%s%sContent-Length: %ld\r\n\r\n%s", response->status, response->content_type, strlen(response->body), response->body);
     ssize_t bytes_sent = send(client_socket, response_str, response_len, 0);
     if (bytes_sent < 0) {
         perror("send");
@@ -79,8 +81,10 @@ void send_response(int client_socket, struct http_response_t* response) {
 void parse_request(char *request_str, struct http_request_t *request) {
     char *saveptr;
     char *token = strtok_r(request_str, "\r\n", &saveptr);
+
+    token = strtok_r(token, " ", &saveptr);
     strncpy(request->method, token, 8);
-    token = strtok_r(NULL, "\r\n", &saveptr);
+    token = strtok_r(NULL, " HTTP", &saveptr);
     strncpy(request->path, token, MAX_PATH_LEN);
 }
 
