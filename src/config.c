@@ -29,8 +29,6 @@ int parse_config(const char *path, struct cfg_t *config) {
 
         if (strcmp(key, "cpu_limit") == 0) {
             config->cpu_limit = atoi(value);
-        } else if (strcmp(key, "thread_limit") == 0) {
-            config->thread_limit = atoi(value);
         } else if (strcmp(key, "port") == 0) {
             config->port = atoi(value);
         } else if (strcmp(key, "document_root") == 0) {
