@@ -5,14 +5,106 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/types.h>
+#include <sys/sendfile.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <ctype.h>
 #include <time.h>
 #include "server.h"
 
-#define PORT 8081
-#define BACKLOG 10
+/*========================================PRIVATE=============================================*/
+
+int is_dir(char *path) {
+    struct stat path_stat;
+    if (stat(path, &path_stat) == 0) {
+        return S_ISDIR(path_stat.st_mode);
+    }
+    return 0;
+}
+
+char *get_content_type(char *path) {
+    char *extension = strrchr(path, '.');
+    
+    if (extension == NULL) {
+        return "text/plain";
+    }
+    if (strcmp(extension, ".html") == 0) {
+        return "text/html";
+    }
+    if (strcmp(extension, ".css") == 0) {
+        return "text/css";
+    }
+    if (strcmp(extension, ".js") == 0) {
+        return "application/javascript";
+    }
+    if (strcmp(extension, ".jpeg") == 0) {
+        return "image/jpeg";
+    }
+    if (strcmp(extension, ".png") == 0) {
+        return "image/png";
+    }
+    if (strcmp(extension, ".gif") == 0) {
+        return "image/gif";
+    }
+    if (strcmp(extension, ".swf") == 0) {
+        return "application/x-shockwave-flash";
+    }
+    return "text/plain";
+}
+
+void send_response_with_buffer(int client_socket, struct http_response_t* response) {
+    char response_str[MAX_RESPONSE_LEN];
+    size_t response_len = snprintf(response_str, MAX_RESPONSE_LEN, "%s%sContent-Length: %ld\r\n\r\n%s", 
+                                    response->status, response->content_type, response->body_size, response->body);
+
+    ssize_t bytes_sent = send(client_socket, response_str, response_len, 0);
+    if (bytes_sent < 0) {
+        perror("send");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void parse_request(char *request_str, struct http_request_t *request) {
+    char *saveptr;
+    char *token = strtok_r(request_str, "\r\n", &saveptr);
+
+    // Parsing method name
+    token = strtok_r(token, " ", &saveptr);
+    strncpy(request->method, token, 8);
+    request->method[8] = '\0';
+
+    // Parsing path name
+    char *last_space = strrchr(saveptr, ' ');
+    size_t path_len = last_space - saveptr;
+    strncpy(request->path, saveptr, path_len);
+    request->path[path_len] = '\0';
+}
+
+void send_response_with_file(int client_socket, struct http_request_t request, struct http_response_t* response) {
+    char response_str[MAX_RESPONSE_LEN];
+    size_t response_len = 0;
+
+    response_len = snprintf(response_str, MAX_RESPONSE_LEN, "%s%sContent-Length: %ld\r\n\r\n", 
+                                    response->status, response->content_type, response->body_size);
+    send(client_socket, response_str, response_len, 0);
+
+    int filefd = open(request.path, O_RDONLY);
+    if (filefd == -1) {
+        perror("open");
+        exit(EXIT_FAILURE);
+    }
+
+    off_t offset = 0;
+    ssize_t bytes_sent = sendfile(client_socket, filefd, &offset, response->body_size);
+    if (bytes_sent < 0) {
+        perror("send");
+        exit(EXIT_FAILURE);
+    }
+
+    close(filefd);
+}
+
+/*=========================================PUBLIC==============================================*/
 
 void handle_request(int client_socket) {
     char request_str[MAX_REQUEST_LEN];
@@ -34,91 +126,45 @@ void handle_request(int client_socket) {
         strcpy(response.content_type, "Content-Type: text/html\r\n");
         strcpy(response.body, "<html><body><h1>405 Method Not Allowed</h1></body></html>");
 
-        send_response(client_socket, &response);
+        send_response_with_buffer(client_socket, &response);
         return;
     }
 
-    char path[MAX_PATH_LEN];
-    snprintf(path, MAX_PATH_LEN, ".%s", request.path);
-    if (access(path, F_OK) == -1) {
+    char path_buf[MAX_PATH_LEN];
+    snprintf(path_buf, MAX_PATH_LEN, ".%s", request.path);
+    if (is_dir(path_buf)) {
+        if (path_buf[strlen(path_buf) - 1] != '/') {
+            strcat(path_buf, "/");
+        }
+        strcat(path_buf, "index.html");
+    }
+    strncpy(request.path, path_buf, MAX_PATH_LEN);
+    request.path[MAX_PATH_LEN - 1] = '\0';
+    
+    if (access(request.path, F_OK) == -1) {
         strcpy(response.status, "HTTP/1.1 404 Not Found\r\n");
         strcpy(response.content_type, "Content-Type: text/html\r\n");
         strcpy(response.body, "<html><body><h1>404 Not Found</h1></body></html>");
 
-        send_response(client_socket, &response);
+        send_response_with_buffer(client_socket, &response);
         return;
     }
 
+    // Determine content type from file extension
     char content_type[32];
-    snprintf(content_type, 32, "Content-Type: %s\r\n", get_content_type(path));
+    snprintf(content_type, 32, "Content-Type: %s\r\n", get_content_type(request.path));
 
+    // Getting file size
     struct stat st;
-    if (stat(path, &st) == -1) {
+    if (stat(request.path, &st) == -1) {
         perror("stat");
         exit(EXIT_FAILURE);
     }
+    response.body_size = st.st_size;
 
-    char *body = malloc(st.st_size);
-    read_file(path, body, st.st_size);
-
+    // Setting response status and content type
     strcpy(response.status, "HTTP/1.1 200 OK\r\n");
     strcpy(response.content_type, content_type);
-    strcpy(response.body, body);
 
-    send_response(client_socket, &response);
-}
-
-void send_response(int client_socket, struct http_response_t* response) {
-    char response_str[MAX_RESPONSE_LEN];
-    size_t response_len = snprintf(response_str, MAX_RESPONSE_LEN, "%s%sContent-Length: %ld\r\n\r\n%s", response->status, response->content_type, strlen(response->body), response->body);
-    ssize_t bytes_sent = send(client_socket, response_str, response_len, 0);
-    if (bytes_sent < 0) {
-        perror("send");
-        exit(EXIT_FAILURE);
-    }
-}
-
-void parse_request(char *request_str, struct http_request_t *request) {
-    char *saveptr;
-    char *token = strtok_r(request_str, "\r\n", &saveptr);
-
-    token = strtok_r(token, " ", &saveptr);
-    strncpy(request->method, token, 8);
-    token = strtok_r(NULL, " HTTP", &saveptr);
-    strncpy(request->path, token, MAX_PATH_LEN);
-}
-
-void read_file(char *path, char *buffer, ssize_t size) {
-    int fd = open(path, O_RDONLY);
-    if (fd == -1) {
-        perror("open");
-        exit(EXIT_FAILURE);
-    }
-    ssize_t bytes_read = read(fd, buffer, size);
-    if (bytes_read < 0) {
-        perror("read");
-        exit(EXIT_FAILURE);
-    }
-    close(fd);
-}
-
-char *get_content_type(char *path) {
-    char *extension = strrchr(path, '.');
-    
-    if (extension == NULL) {
-        return "text/plain";
-    }
-    if (strcmp(extension, ".html") == 0) {
-        return "text/html";
-    }
-    if (strcmp(extension, ".css") == 0) {
-        return "text/css";
-    }
-    if (strcmp(extension, ".js") == 0) {
-        return "application/javascript";
-    }
-    if (strcmp(extension, ".jpeg") == 0) {
-        return "image/jpeg";
-    }
-    return "text/plain";
+    send_response_with_file(client_socket, request, &response);
 }

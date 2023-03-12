@@ -18,13 +18,16 @@ struct http_response_t {
     char status[32];
     char content_type[32];
     char body[MAX_RESPONSE_LEN];
+    off_t body_size;
 };
 
 void handle_request(int client_socket);
-void send_response(int client_socket, struct http_response_t* response);
+void send_response_with_file(int client_socket,
+                   struct http_request_t request,
+                   struct http_response_t* response);
 void parse_request(char* request_str, struct http_request_t* request);
 
-void read_file(char *path, char *buffer, ssize_t size);
+// void read_file(char *path, char *buffer, ssize_t size);
 char *get_content_type(char *path);
 
 #endif // SERVER_H
