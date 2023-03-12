@@ -91,6 +91,12 @@ void parse_request(char *request_str, http_request_t *request) {
     size_t path_len = last_space - saveptr;
     strncpy(request->path, saveptr, path_len);
     request->path[path_len] = '\0';
+
+    // Check if path is hex encoded
+    char hex_encoded[strlen(request->path)];
+    hex_to_ascii(request->path, hex_encoded);
+    strncpy(request->path, hex_encoded, MAX_PATH_LEN);
+    request->path[MAX_PATH_LEN - 1] = '\0';
 }
 
 void send_response_with_file(int client_socket, http_request_t request, http_response_t* response) {
@@ -136,7 +142,7 @@ void handle_request(int client_socket) {
     }
     request_str[bytes_recieved] = '\0';
 
-    printf(request_str);
+    printf("%s\n", request_str);
 
     // Declare request and response
     http_request_t request;

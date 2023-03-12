@@ -37,6 +37,6 @@ int is_dir(char *path);
 
 char *get_content_type(char *path);
 
-// char *set_http_header(http_response_t *response);
+void hex_to_ascii(char *hex_str, char *ascii_str);
 
 #endif // UTILS_H
