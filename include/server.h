@@ -22,12 +22,13 @@ struct http_response_t {
 };
 
 void handle_request(int client_socket);
+
 void send_response_with_file(int client_socket,
                    struct http_request_t request,
                    struct http_response_t* response);
 void parse_request(char* request_str, struct http_request_t* request);
 
 // void read_file(char *path, char *buffer, ssize_t size);
-char *get_content_type(char *path);
+// char *get_content_type(char *path);
 
 #endif // SERVER_H
