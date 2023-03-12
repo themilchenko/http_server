@@ -11,7 +11,6 @@
 #include <time.h>
 
 #include "server.h"
-// #include "utils.h"
 
 /*========================================PRIVATE=============================================*/
 
@@ -21,7 +20,6 @@ void init_response(http_response_t *response) {
 }
 
 void set_header_response(http_response_t *response, const int status_code, const char *content_type) {
-    // strncpy(response->status_code, status_code, 32);
     response->status_code = status_code;
     strncpy(response->content_type, content_type, 32);
     response->content_type[31] = '\0';
@@ -53,28 +51,19 @@ void set_http_header(http_response_t *response, char *response_str) {
     }
     header[MAX_HEADER_LEN - 1] = '\0';
 
+    char date[50];
+    get_current_time(date);
+
     size_t recieved_bytes = snprintf(result_header, MAX_HEADER_LEN,
                                      HTTP_RESPONSE_TEMPLATE,
                                      header,
+                                     date,
                                      response->content_type,
                                      response->body_size);
     response->header_size = recieved_bytes;
 
     strncpy(response_str, result_header, MAX_HEADER_LEN);
     response_str[MAX_HEADER_LEN - 1] = '\0';
-}
-
-void send_response_with_buffer(int client_socket, http_response_t* response) {
-    char response_str[MAX_RESPONSE_LEN];
-    set_http_header(response, response_str);
-    ssize_t bytes_sent = send(client_socket, response_str, response->header_size, 0);
-    if (bytes_sent < 0) {
-        perror("send");
-        exit(EXIT_FAILURE);
-    }
-
-    // set_body_response(response, "405 Method Not Allowed");
-    ssize_t body_bytes_send = send(client_socket, response->body, response->body_size, 0);
 }
 
 void parse_request(char *request_str, http_request_t *request) {
@@ -99,17 +88,30 @@ void parse_request(char *request_str, http_request_t *request) {
     request->path[MAX_PATH_LEN - 1] = '\0';
 }
 
+void send_response_with_buffer(int client_socket, http_response_t* response) {
+    char response_str[MAX_RESPONSE_LEN];
+    set_http_header(response, response_str);
+    ssize_t bytes_sent = send(client_socket, response_str, response->header_size, 0);
+    if (bytes_sent < 0) {
+        perror("send");
+        exit(EXIT_FAILURE);
+    }
+
+    // set_body_response(response, "405 Method Not Allowed");
+    ssize_t body_bytes_send = send(client_socket, response->body, response->body_size, 0);
+}
+
 void send_response_with_file(int client_socket, http_request_t request, http_response_t* response) {
     char response_str[MAX_RESPONSE_LEN];
-    // size_t response_len = 0;
-
-    // response_len = snprintf(response_str, MAX_RESPONSE_LEN, "%s%sContent-Length: %ld\r\n\r\n", 
-    //                                 response->status_code, response->content_type, response->body_size);
     set_http_header(response, response_str);
     ssize_t bytes_send = send(client_socket, response_str, response->header_size, 0);
     if (bytes_send < 0) {
         perror("send");
         exit(EXIT_FAILURE);
+    }
+
+    if (request.method == HEAD_METHOD) {
+        return;
     }
 
     int fd = open(request.path, O_RDONLY);
@@ -152,7 +154,7 @@ void handle_request(int client_socket) {
     init_response(&response);
 
     // Check if method is GET
-    if (strcmp(request.method, GET_METHOD) != 0) {
+    if (strcmp(request.method, GET_METHOD) != 0 || strcmp(request.method, HEAD_METHOD) != 0) {
         set_header_response(&response, HTTP_STATUS_METHOD_NOT_ALLOWED, "plain/text");
         set_body_response(&response, HTTP_NOT_ALLOWED_BODY);
         send_response_with_buffer(client_socket, &response);
@@ -179,11 +181,10 @@ void handle_request(int client_socket) {
         return;
     }
 
-    // Determine content type from file extension
-    // char content_type[32];
-    // snprintf(content_type, 32, "Content-Type: %s\r\n", get_content_type(request.path));
+    // Set response header
     set_header_response(&response, HTTP_STATUS_OK, get_content_type(request.path));
-    // Getting file size
+
+    // read the size of file
     struct stat st;
     if (stat(request.path, &st) == -1) {
         perror("stat");
@@ -191,5 +192,6 @@ void handle_request(int client_socket) {
     }
     response.body_size = st.st_size;
 
+    // Finally send response
     send_response_with_file(client_socket, request, &response);
 }

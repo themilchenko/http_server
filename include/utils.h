@@ -1,8 +1,6 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-// #include "server.h"
-
 #define INDEX_HTML "index.html"
 
 // HTTP methods
@@ -28,6 +26,8 @@
 
 // Declare template for HTTP response
 static const char *HTTP_RESPONSE_TEMPLATE = "%s"
+                                            "Server: milchenko\r\n"
+                                            "Date: %s\r\n"
                                             "Content-Type: %s\r\n"
                                             "Content-Length: %d\r\n"
                                             "Connection: close\r\n"
@@ -38,5 +38,7 @@ int is_dir(char *path);
 char *get_content_type(char *path);
 
 void hex_to_ascii(char *hex_str, char *ascii_str);
+
+void get_current_time(char *time_str);
 
 #endif // UTILS_H

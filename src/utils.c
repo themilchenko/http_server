@@ -2,6 +2,9 @@
 #include <string.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <time.h>
 
 // #include "server.h"
 #include "utils.h"
@@ -63,4 +66,10 @@ void hex_to_ascii(char *hex_str, char *ascii_str) {
         }
     }
     ascii_str[j] = '\0'; // terminate the string
+}
+
+void get_current_time(char *time_str) {
+    time_t now = time(NULL);
+    struct tm *tm = gmtime(&now);
+    strftime(time_str, sizeof(time_str), "%a, %d %b %Y %H:%M:%S GMT", tm);
 }
