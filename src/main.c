@@ -9,9 +9,19 @@
 #include <fcntl.h>
 #include <ctype.h>
 #include <time.h>
+
 #include "server.h"
 
+void get_cwd(char *cwd) {
+    getcwd(cwd, MAX_PATH_LEN);
+    cwd[MAX_PATH_LEN - 1] = '\0';
+}
+
 int main() {
+    char cwd[MAX_PATH_LEN];
+    get_cwd(cwd);
+    printf("%s\n", cwd);
+
     int server_socket, client_socket;
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
@@ -25,7 +35,6 @@ int main() {
     // Enabling address reuse
     int optval = 1;
     setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
-
 
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;

@@ -1,6 +1,9 @@
 #ifndef SERVER_H
 #define SERVER_H
 
+#include <sys/types.h>
+#include "utils.h"
+
 #define MAX_REQUEST_LEN 2048
 #define MAX_PATH_LEN 1024
 #define MAX_HEADER_LEN 2048
@@ -9,26 +12,20 @@
 #define PORT 8081
 #define BACKLOG 10
 
-struct http_request_t {
+typedef struct http_request_t {
     char method[10];
     char path[MAX_PATH_LEN];
-};
+} http_request_t;
 
-struct http_response_t {
-    char status[32];
+typedef struct http_response_t {
+    int status_code;
     char content_type[32];
     char body[MAX_RESPONSE_LEN];
+
     off_t body_size;
-};
+    size_t header_size;
+} http_response_t;
 
 void handle_request(int client_socket);
-
-void send_response_with_file(int client_socket,
-                   struct http_request_t request,
-                   struct http_response_t* response);
-void parse_request(char* request_str, struct http_request_t* request);
-
-// void read_file(char *path, char *buffer, ssize_t size);
-// char *get_content_type(char *path);
 
 #endif // SERVER_H
