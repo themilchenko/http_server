@@ -1,6 +1,8 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#define CPU_LIMIT 10
+
 struct cfg_t {
     int port;
     int cpu_limit;

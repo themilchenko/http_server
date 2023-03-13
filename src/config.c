@@ -4,9 +4,9 @@
 #include "config.h"
 
 void init_config(struct cfg_t *config) {
-    config->port = 8080;
+    config->port = 80;
     config->cpu_limit = 1;
-    strcpy(config->document_root, "var/www/html");
+    strcpy(config->document_root, "/var/www/html");
 }
 
 int parse_config(const char *path, struct cfg_t *config) {

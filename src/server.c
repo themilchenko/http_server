@@ -93,9 +93,11 @@ void send_response_with_buffer(int client_socket, http_response_t* response) {
     set_http_header(response, response_str);
     ssize_t bytes_sent = send(client_socket, response_str, response->header_size, 0);
     if (bytes_sent < 0) {
+        printf("[%s] Cannot send response header\n", DEBUG_ERR);
         perror("send");
         exit(EXIT_FAILURE);
     }
+    printf("[%s] Sent %ld bytes\n", DEBUG_INFO, bytes_sent);
 
     // set_body_response(response, "405 Method Not Allowed");
     ssize_t body_bytes_send = send(client_socket, response->body, response->body_size, 0);
@@ -106,9 +108,11 @@ void send_response_with_file(int client_socket, http_request_t request, http_res
     set_http_header(response, response_str);
     ssize_t bytes_send = send(client_socket, response_str, response->header_size, 0);
     if (bytes_send < 0) {
+        printf("[%s] Cannot send response header\n", DEBUG_ERR);
         perror("send");
         exit(EXIT_FAILURE);
     }
+    printf("[%s] Sent %ld bytes\n", DEBUG_INFO, bytes_send);
 
     if (request.method == HEAD_METHOD) {
         return;
@@ -116,13 +120,16 @@ void send_response_with_file(int client_socket, http_request_t request, http_res
 
     int fd = open(request.path, O_RDONLY);
     if (fd == -1) {
+        printf("[%s] Cannot open file %s\n", DEBUG_INFO, request.path);
         perror("open");
         exit(EXIT_FAILURE);
     }
+    printf("[%s] File %s opened\n", DEBUG_INFO, request.path);
 
     off_t offset = 0;
     ssize_t bytes_sent = sendfile(client_socket, fd, &offset, response->body_size);
     if (bytes_sent < 0) {
+        printf("[%s] Cannot send file %s\n", DEBUG_ERR, request.path);
         perror("send");
         exit(EXIT_FAILURE);
     }
@@ -143,6 +150,7 @@ void handle_request(int client_socket) {
         exit(EXIT_FAILURE);
     }
     request_str[bytes_recieved] = '\0';
+    printf("[%s] Recieved %ld bytes\n", DEBUG_INFO, bytes_recieved);
 
     printf("%s\n", request_str);
 
@@ -154,12 +162,14 @@ void handle_request(int client_socket) {
     init_response(&response);
 
     // Check if method is GET
-    if (strcmp(request.method, GET_METHOD) != 0 || strcmp(request.method, HEAD_METHOD) != 0) {
+    if (strcmp(request.method, GET_METHOD) != 0 && strcmp(request.method, HEAD_METHOD) != 0) {
+        printf("[%s] Method not allowed\n", DEBUG_INFO);
         set_header_response(&response, HTTP_STATUS_METHOD_NOT_ALLOWED, "plain/text");
         set_body_response(&response, HTTP_NOT_ALLOWED_BODY);
         send_response_with_buffer(client_socket, &response);
         return;
     }
+    printf("[%s] Method is GET or HEAD\n", DEBUG_INFO);
 
     // Determine whether path is a directory
     char path_buf[MAX_PATH_LEN];
@@ -175,11 +185,13 @@ void handle_request(int client_socket) {
 
     // Check if file exists
     if (access(request.path, F_OK) == -1) {
+        printf("[%s] File %s not found\n", DEBUG_INFO, request.path);
         set_header_response(&response, HTTP_STATUS_NOT_FOUND, "text/html");
         set_body_response(&response, HTTP_NOT_FOUND_BODY);
         send_response_with_buffer(client_socket, &response);
         return;
     }
+    printf("[%s] File %s was found\n", DEBUG_INFO, request.path);
 
     // Set response header
     set_header_response(&response, HTTP_STATUS_OK, get_content_type(request.path));
@@ -187,10 +199,12 @@ void handle_request(int client_socket) {
     // read the size of file
     struct stat st;
     if (stat(request.path, &st) == -1) {
+        printf("[%s] Cannot get file stat\n", DEBUG_ERR);
         perror("stat");
         exit(EXIT_FAILURE);
     }
     response.body_size = st.st_size;
+    printf("[%s] File size is %ld bytes\n", DEBUG_INFO, response.body_size);
 
     // Finally send response
     send_response_with_file(client_socket, request, &response);

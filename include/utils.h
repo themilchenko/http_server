@@ -1,6 +1,10 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#define DEBUG_INFO "INFO"
+#define DEBUG_WARN "WARN"
+#define DEBUG_ERR  "ERR"
+
 #define INDEX_HTML "index.html"
 
 // HTTP methods
