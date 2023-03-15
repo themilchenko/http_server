@@ -6,7 +6,7 @@
 
 ### On my own machine and in docker container
 
-I use Apache benchmarking tool to count performance. I use this command to give all RPS: 
+I use Apache benchmarking tool to count performance. I use this command to give all RPS:
 
 `ab -n 50000 -c 100 http://localhost:8081/httptest/wikipedia_russia.html`
 
