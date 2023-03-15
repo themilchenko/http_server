@@ -75,37 +75,33 @@ int main() {
         }
         printf("[%s] Accepted connection on socket from %s:%d\n", DEBUG_INFO, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
 
-        // // For testing purposes
-        handle_request(client_socket, cfg->document_root);
-        close(client_socket);
-
         // Fork a child process to handle the request
-        // pid_t pid = fork();
-        // printf("CPU count: %d\n", cpu_count);
-        // if (pid < 0) {
-        //     printf("[%s] Fork failed\n", DEBUG_ERR);
-        //     perror("fork");
-        //     exit(EXIT_FAILURE);
-        // }
+        pid_t pid = fork();
+        printf("CPU count: %d\n", cpu_count);
+        if (pid < 0) {
+            printf("[%s] Fork failed\n", DEBUG_ERR);
+            perror("fork");
+            exit(EXIT_FAILURE);
+        }
         
-        // if (pid == 0) {
-        //     // Child process
-        //     close(server_socket);
-        //     handle_request(client_socket);
-        //     close(client_socket);
-        //     exit(EXIT_SUCCESS);
-        // } else {
-        //     close(client_socket);
-        //     ++cpu_count; // Only increment if a child process was successfully created
-        //     if (cpu_count >= CPU_LIMIT) {
-        //     printf("[%s] CPU limit reached, waiting for child processes to finish...\n", DEBUG_INFO);
-        //     child_pid = waitpid(-1, &status, 0);
-        //     while (child_pid > 0) {
-        //         --cpu_count;
-        //         child_pid = waitpid(-1, &status, 0);
-        //     }
-        //     }
-        // }
+        if (pid == 0) {
+            // Child process
+            close(server_socket);
+            handle_request(client_socket, cfg->document_root);
+            close(client_socket);
+            exit(EXIT_SUCCESS);
+        } else {
+            close(client_socket);
+            ++cpu_count; // Only increment if a child process was successfully created
+            if (cpu_count >= CPU_LIMIT) {
+            printf("[%s] CPU limit reached, waiting for child processes to finish...\n", DEBUG_INFO);
+            child_pid = waitpid(-1, &status, 0);
+            while (child_pid > 0) {
+                --cpu_count;
+                child_pid = waitpid(-1, &status, 0);
+            }
+            }
+        }
     }
 
     free(cfg);

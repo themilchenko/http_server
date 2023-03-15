@@ -72,14 +72,25 @@ int parse_request(char *request_str, http_request_t *request, char *root_dir) {
     char *saveptr;
     char *token = strtok_r(request_str, "\r\n", &saveptr);
 
+    if (token == NULL) {
+        return -1;
+    }
+
     // Parsing method name
     token = strtok_r(token, " ", &saveptr);
     strncpy(request->method, token, 8);
     request->method[8] = '\0';
 
     // Parsing path name
-    char *last_space = strrchr(saveptr, ' ');
-    size_t path_len = last_space - saveptr;
+
+    // Firstly check query params
+    char *query_params = strchr(saveptr, '?');
+    if (query_params == NULL) {
+        query_params = strrchr(saveptr, ' ');
+    }
+
+    // char *last_space = strrchr(saveptr, ' ');
+    size_t path_len = query_params - saveptr;
     strncpy(request->path, saveptr, path_len);
     request->path[path_len] = '\0';
 
@@ -128,7 +139,7 @@ void send_response_with_file(int client_socket, http_request_t request, http_res
     }
     printf("[%s] Sent %ld bytes\n", DEBUG_INFO, bytes_send);
 
-    if (request.method == HEAD_METHOD) {
+    if (strcmp(request.method, HEAD_METHOD) == 0) {
         return;
     }
 
@@ -181,6 +192,9 @@ void handle_request(int client_socket, char *root_dir) {
         send_response_with_buffer(client_socket, &response);
         return;
     }
+    if (status == -1) {
+        return;
+    }
 
     // Check if method is GET
     if (strcmp(request.method, GET_METHOD) != 0 && strcmp(request.method, HEAD_METHOD) != 0) {
@@ -193,6 +207,7 @@ void handle_request(int client_socket, char *root_dir) {
     printf("[%s] Method is GET or HEAD\n", DEBUG_INFO);
 
     // Determine whether path is a directory
+    int is_index = 0;
     char path_buf[MAX_PATH_LEN];
     snprintf(path_buf, MAX_PATH_LEN, "%s", request.path);
     if (is_dir(path_buf)) {
@@ -200,6 +215,7 @@ void handle_request(int client_socket, char *root_dir) {
             strcat(path_buf, "/");
         }
         strcat(path_buf, INDEX_HTML);
+        is_index = 1;
     }
     strncpy(request.path, path_buf, MAX_PATH_LEN);
     request.path[MAX_PATH_LEN - 1] = '\0';
@@ -207,7 +223,15 @@ void handle_request(int client_socket, char *root_dir) {
     // Check if file exists
     if (access(request.path, F_OK) == -1) {
         printf("[%s] File %s not found\n", DEBUG_INFO, request.path);
-        set_header_response(&response, HTTP_STATUS_NOT_FOUND, "text/html");
+        // if (is_index == 1) {
+        set_header_response(&response,
+                           (is_index == 1) ? 
+                                    HTTP_STATUS_FORBIDDEN : 
+                                    HTTP_STATUS_NOT_FOUND, 
+                            "text/html");
+        // } else {
+            // set_header_response(&response, HTTP_STATUS_NOT_FOUND, "text/html");
+        // }
         set_body_response(&response, HTTP_NOT_FOUND_BODY);
         send_response_with_buffer(client_socket, &response);
         return;
