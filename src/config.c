@@ -27,7 +27,7 @@ int parse_config(const char *path, cfg_t *config) {
 
     char line[256];
     while (fgets(line, sizeof(line), file) != NULL) {
-        if (line[0] == '#' || line[0] == '\n' || line[0] == "") {
+        if (line[0] == '#' || line[0] == '\n') {
             continue;
         }
 
