@@ -5,12 +5,14 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/sendfile.h>
+#include <errno.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <ctype.h>
 #include <time.h>
 
 #include "server.h"
+#include "utils.h"
 
 /*========================================PRIVATE=============================================*/
 
@@ -66,7 +68,7 @@ void set_http_header(http_response_t *response, char *response_str) {
     response_str[MAX_HEADER_LEN - 1] = '\0';
 }
 
-void parse_request(char *request_str, http_request_t *request) {
+int parse_request(char *request_str, http_request_t *request, char *root_dir) {
     char *saveptr;
     char *token = strtok_r(request_str, "\r\n", &saveptr);
 
@@ -86,6 +88,18 @@ void parse_request(char *request_str, http_request_t *request) {
     hex_to_ascii(request->path, hex_encoded);
     strncpy(request->path, hex_encoded, MAX_PATH_LEN);
     request->path[MAX_PATH_LEN - 1] = '\0';
+
+    // Concatenate root dir with requested path
+    char buffer[MAX_PATH_LEN];
+    strncpy(buffer, root_dir, MAX_PATH_LEN);
+    buffer[MAX_PATH_LEN - 1] = '\0';
+
+    strcat(buffer, request->path);
+    strncpy(request->path, buffer, MAX_PATH_LEN);
+    request->path[MAX_PATH_LEN - 1] = '\0';
+
+    // Check if path is escaping root dir and return result
+    return is_escaping_path(request->path, root_dir);
 }
 
 void send_response_with_buffer(int client_socket, http_response_t* response) {
@@ -141,7 +155,7 @@ void send_response_with_file(int client_socket, http_request_t request, http_res
 
 /*=========================================PUBLIC==============================================*/
 
-void handle_request(int client_socket) {
+void handle_request(int client_socket, char *root_dir) {
     // Receive request
     char request_str[MAX_REQUEST_LEN];
     ssize_t bytes_recieved = recv(client_socket, request_str, MAX_REQUEST_LEN - 1, 0);
@@ -156,10 +170,17 @@ void handle_request(int client_socket) {
 
     // Declare request and response
     http_request_t request;
-    parse_request(request_str, &request);
-
     http_response_t response;
     init_response(&response);
+
+    int status = parse_request(request_str, &request, root_dir);
+    if (status == 1) {
+        printf("[%s] File %s not found\n", DEBUG_INFO, request.path);
+        set_header_response(&response, HTTP_STATUS_NOT_FOUND, "text/html");
+        set_body_response(&response, HTTP_NOT_FOUND_BODY);
+        send_response_with_buffer(client_socket, &response);
+        return;
+    }
 
     // Check if method is GET
     if (strcmp(request.method, GET_METHOD) != 0 && strcmp(request.method, HEAD_METHOD) != 0) {
@@ -173,7 +194,7 @@ void handle_request(int client_socket) {
 
     // Determine whether path is a directory
     char path_buf[MAX_PATH_LEN];
-    snprintf(path_buf, MAX_PATH_LEN, ".%s", request.path);
+    snprintf(path_buf, MAX_PATH_LEN, "%s", request.path);
     if (is_dir(path_buf)) {
         if (path_buf[strlen(path_buf) - 1] != '/') {
             strcat(path_buf, "/");

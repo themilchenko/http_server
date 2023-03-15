@@ -2,6 +2,7 @@
 #define SERVER_H
 
 #include <sys/types.h>
+
 #include "utils.h"
 
 #define MAX_REQUEST_LEN 2048
@@ -9,8 +10,8 @@
 #define MAX_HEADER_LEN 2048
 #define MAX_RESPONSE_LEN 102400
 
-#define PORT 8081
-#define BACKLOG 10
+#define PORT 80
+#define BACKLOG 10000
 
 typedef struct http_request_t {
     char method[10];
@@ -26,6 +27,6 @@ typedef struct http_response_t {
     size_t header_size;
 } http_response_t;
 
-void handle_request(int client_socket);
+void handle_request(int client_socket, char *document_root);
 
 #endif // SERVER_H

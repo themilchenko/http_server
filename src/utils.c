@@ -32,7 +32,7 @@ char *get_content_type(char *path) {
     if (strcmp(extension, ".js") == 0) {
         return "application/javascript";
     }
-    if (strcmp(extension, ".jpeg") == 0) {
+    if (strcmp(extension, ".jpeg") == 0 || strcmp(extension, ".jpg") == 0) {
         return "image/jpeg";
     }
     if (strcmp(extension, ".png") == 0) {
@@ -72,4 +72,16 @@ void get_current_time(char *time_str) {
     time_t now = time(NULL);
     struct tm *tm = gmtime(&now);
     strftime(time_str, sizeof(time_str), "%a, %d %b %Y %H:%M:%S GMT", tm);
+    // tzset(); // Force the library to free its internal memory
+}
+
+int is_escaping_path(char *path, char *document_root) {
+    char absolute_path[1024];
+    char *real_path = realpath(path, absolute_path);
+    if (real_path == NULL) {
+        return 1;
+    }
+    
+    char *contains = strstr(absolute_path, document_root);
+    return contains == NULL;
 }

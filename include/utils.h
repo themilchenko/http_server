@@ -45,4 +45,6 @@ void hex_to_ascii(char *hex_str, char *ascii_str);
 
 void get_current_time(char *time_str);
 
+int is_escaping_path(char *path, char *document_root);
+
 #endif // UTILS_H
