@@ -21,5 +21,5 @@ docker_run:
 	docker run --rm -p 80:80 --name http_server_test -t http_server
 
 docker_clean:
-	docker rm $(docker ps -a -q)
+	docker rm -f $$(docker ps -a -q)
 	docker system prune

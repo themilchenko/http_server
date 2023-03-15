@@ -5,21 +5,32 @@
 
 #include "config.h"
 
-void init_config(cfg_t *config) {
-    config->port = 8080;
+int init_config(cfg_t *config) {
+    config->port = 80;
     config->cpu_limit = 1;
-    strcpy(config->document_root, "/home/milchenko/technopark/third_semestr/highload/http-test-suite");
+
+    char cwd[1024];
+    if (getcwd(cwd, sizeof(cwd)) == NULL) {
+        return -1;
+    }
+
+    strcpy(config->document_root, cwd);
+    return 0;
 }
 
 int parse_config(const char *path, cfg_t *config) {
     FILE *file = fopen(path, "r");
     if (file == NULL) {
         perror("fopen");
-        return EXIT_FAILURE;
+        return -1;
     }
 
     char line[256];
     while (fgets(line, sizeof(line), file) != NULL) {
+        if (line[0] == '#' || line[0] == '\n' || line[0] == "") {
+            continue;
+        }
+
         line[strcspn(line, "\n")] = '\0';
 
         char key[256];
@@ -42,5 +53,5 @@ int parse_config(const char *path, cfg_t *config) {
         }
     }
 
-    return EXIT_SUCCESS;
+    return 0;
 }

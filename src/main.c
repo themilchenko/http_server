@@ -17,13 +17,31 @@
 
 #define CPU_LIMIT 4
 
-int main() {
+int main(int argc, char *argv[]) {
+    cfg_t *cfg = malloc(sizeof(cfg_t));
+    init_config(cfg);
+    if (argc < 1 || argc > 2) {
+        printf("Usage: %s <config_file>\n", argv[0]);
+        exit(EXIT_FAILURE);
+    } else if (argc == 2) {
+        if (access(argv[1], R_OK) != 0) {
+            perror("file access");
+            exit(EXIT_FAILURE);
+        }
+        if (parse_config(argv[1], cfg) == -1) {
+            printf("File %s doesn't exist\n", argv[1]);
+        }
+    } else {
+        if (init_config(cfg) == -1) {
+            printf("Error while initializing config\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+
     int server_socket, client_socket;
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
-    
-    cfg_t *cfg = malloc(sizeof(cfg_t));
-    init_config(cfg);
 
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (server_socket < 0) {

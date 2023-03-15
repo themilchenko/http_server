@@ -6,7 +6,6 @@
 #include <ctype.h>
 #include <time.h>
 
-// #include "server.h"
 #include "utils.h"
 
 int is_dir(char *path) {
@@ -32,7 +31,8 @@ char *get_content_type(char *path) {
     if (strcmp(extension, ".js") == 0) {
         return "application/javascript";
     }
-    if (strcmp(extension, ".jpeg") == 0 || strcmp(extension, ".jpg") == 0) {
+    if (strcmp(extension, ".jpeg") == 0 || 
+        strcmp(extension, ".jpg") == 0) {
         return "image/jpeg";
     }
     if (strcmp(extension, ".png") == 0) {
@@ -55,24 +55,21 @@ void hex_to_ascii(char *hex_str, char *ascii_str) {
                 char hex[3] = { hex_str[i+1], hex_str[i+2], '\0' };
                 int value = strtol(hex, NULL, 16);
                 ascii_str[j++] = value;
-                i += 2; // go to next hex pair
+                i += 2;
             } else {
-                // invalid hex format, so copy as is
                 ascii_str[j++] = hex_str[i];
             }
         } else {
-            // not a hex character, so copy as is
             ascii_str[j++] = hex_str[i];
         }
     }
-    ascii_str[j] = '\0'; // terminate the string
+    ascii_str[j] = '\0';
 }
 
 void get_current_time(char *time_str) {
     time_t now = time(NULL);
     struct tm *tm = gmtime(&now);
     strftime(time_str, sizeof(time_str), "%a, %d %b %Y %H:%M:%S GMT", tm);
-    // tzset(); // Force the library to free its internal memory
 }
 
 int is_escaping_path(char *path, char *document_root) {

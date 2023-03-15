@@ -7,7 +7,7 @@ typedef struct cfg_t {
     char document_root[1024];
 } cfg_t;
 
-void init_config(cfg_t *config);
+int init_config(cfg_t *config);
 
 int parse_config(const char *path, cfg_t *config);
 

@@ -223,15 +223,11 @@ void handle_request(int client_socket, char *root_dir) {
     // Check if file exists
     if (access(request.path, F_OK) == -1) {
         printf("[%s] File %s not found\n", DEBUG_INFO, request.path);
-        // if (is_index == 1) {
         set_header_response(&response,
                            (is_index == 1) ? 
                                     HTTP_STATUS_FORBIDDEN : 
                                     HTTP_STATUS_NOT_FOUND, 
                             "text/html");
-        // } else {
-            // set_header_response(&response, HTTP_STATUS_NOT_FOUND, "text/html");
-        // }
         set_body_response(&response, HTTP_NOT_FOUND_BODY);
         send_response_with_buffer(client_socket, &response);
         return;
