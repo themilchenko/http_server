@@ -1,24 +1,25 @@
-CC = gcc
-CFLAGS = -Wall -Werror -Wextra -pedantic -std=c99
-TARGET = myProgram
-SRCDIR = src
-INCDIR = include
-OBJDIR = obj
+BUILD_DIR := build
 
-SRC = $(wildcard $(SRCDIR)/*.c)
-OBJ = $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SRC))
-INC = -I$(INCDIR)
+.PHONY: clean all
 
-.PHONY: all clean
-
-all: $(TARGET)
-
-$(TARGET): $(OBJ)
-	$(CC) $(CFLAGS) $(OBJ) -o $(TARGET)
-
-$(OBJDIR)/%.o: $(SRCDIR)/%.c
-	mkdir -p $(OBJDIR)
-	$(CC) $(CFLAGS) $(INC) -c -o $@ $<
+all: clean
+	@echo "Building project..."
+	mkdir -p $(BUILD_DIR)
+	cd $(BUILD_DIR) && cmake ..
+	cd $(BUILD_DIR) && make
 
 clean:
-	rm -rf $(OBJDIR) $(TARGET)
+	@echo "Cleaning up building artefacts..."
+	rm -rf $(BUILD_DIR)
+
+docker: docker_clean docker_build docker_run
+
+docker_build:
+	docker build -t http_server:latest .
+
+docker_run:
+	docker run --rm -p 80:80 --name http_server_test -t http_server
+
+docker_clean:
+	docker rm -f $$(docker ps -a -q)
+	docker system prune
