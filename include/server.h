@@ -2,6 +2,7 @@
 #define SERVER_H
 
 #include <sys/types.h>
+#include <openssl/ssl.h>
 
 #include "utils.h"
 
@@ -27,6 +28,6 @@ typedef struct http_response_t {
     size_t header_size;
 } http_response_t;
 
-void handle_request(int client_socket, char *document_root);
+void handle_request(int client_socket, SSL *ssl, char *document_root);
 
 #endif // SERVER_H
