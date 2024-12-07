@@ -50,8 +50,21 @@ int parse_config(const char *path, cfg_t *config) {
                 perror("access");
                 return EXIT_FAILURE;
             }
+        } else if (strcmp(key, "ssl_cert") == 0) {
+            strcpy(config->ssl_cert, value);
+            if (access(config->ssl_cert, R_OK) != 0) {
+                perror("SSL certificate file access");
+                return EXIT_FAILURE;
+            }
+        } else if (strcmp(key, "ssl_key") == 0) {
+            strcpy(config->ssl_key, value);
+            if (access(config->ssl_key, R_OK) != 0) {
+                perror("SSL key file access");
+                return EXIT_FAILURE;
+            }
         }
     }
 
+    fclose(file);
     return 0;
 }
